@@ -18,6 +18,10 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import static android.speech.tts.TextToSpeech.ERROR;
+import android.speech.tts.TextToSpeech; //tts 관련 함수 import
+
+import java.util.Locale;    //tts 관련 함수 import
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +38,8 @@ public class ChatActivity extends AppCompatActivity {
     private Button Button_send;
     private DatabaseReference myRef;
 
+    private TextToSpeech tts;   //tts 함수 선언
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,10 +52,23 @@ public class ChatActivity extends AppCompatActivity {
         Button_send = findViewById(R.id.Button_send);
         EditText_chat = findViewById(R.id.EditText_chat);
 
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != ERROR) {
+                    //언어 선택
+                    tts.setLanguage(Locale.KOREAN);
+                }
+            }
+        }); // TTS 생성 후, OnInitListener로 초기화
+
         Button_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String msg = EditText_chat.getText().toString(); //msg
+
+                tts.speak(EditText_chat.getText().toString(),TextToSpeech.QUEUE_FLUSH, null);    //edittext_chat 내의 문장을 읽음
+
                 if(msg != null) {
                     ChatData chat = new ChatData();
                     chat.setNickname(nick);
@@ -107,5 +126,16 @@ public class ChatActivity extends AppCompatActivity {
         // chat data : message, nickname, isMine -> data transfer object
         //2. db 내용을 넣는다.
         //3. 상대방 폰에 채팅 내용이 보임.
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //TTS 객체가 남아있을 경우, 실행을 중지하고 메모리에서 제거
+        if(tts != null) {
+            tts.stop();
+            tts.shutdown();
+            tts = null;
+        }
     }
 }
